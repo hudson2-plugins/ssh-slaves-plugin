@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
@@ -345,14 +346,14 @@ public class SSHLauncher extends ComputerLauncher {
         SFTPClient sftp = new SFTPClient(connection);
         // wipe out and recreate the Java directory
         connection.exec("rm -rf " + javaDir, listener.getLogger());
-        sftp.mkdirs(javaDir, 0755);
+        sftp.mkdirs(javaDir, 755);
 
         JDKInstaller jdk = new JDKInstaller("jdk-6u16-oth-JPR@CDS-CDS_Developer", true);
         URL bundle = jdk.locate(listener, p, cpu);
 
         listener.getLogger().println("Installing JDK6u16");
         Util.copyStreamAndClose(bundle.openStream(), new BufferedOutputStream(sftp.writeToFile(bundleFile), 32 * 1024));
-        sftp.chmod(bundleFile, 0755);
+        sftp.chmod(bundleFile, 755);
 
         jdk.install(new RemoteLauncher(listener, connection), p, new SFTPFileSystem(sftp), listener, javaDir,
             bundleFile);
@@ -434,7 +435,7 @@ public class SSHLauncher extends ComputerLauncher {
                 if(fileAttributes == null) {
                     listener.getLogger().println(Messages.SSHLauncher_RemoteFSDoesNotExist(getTimestamp(),
                         workingDirectory));
-                    sftpClient.mkdirs(workingDirectory, 0700);
+                    sftpClient.mkdirs(workingDirectory, 700);
                 } else if(fileAttributes.isRegularFile()) {
                     throw new IOException(Messages.SSHLauncher_RemoteFSIsAFile(workingDirectory));
                 }
@@ -445,6 +446,7 @@ public class SSHLauncher extends ComputerLauncher {
                     sftpClient.rm(fileName);
                 } catch(IOException e) {
                     // the file did not exist... so no need to delete it!
+                    LOGGER.log(Level.FINEST, "Couldn't delete "+ fileName + ". File doesn't exists.");
                 }
 
                 listener.getLogger().println(Messages.SSHLauncher_CopyingSlaveJar(getTimestamp()));
