@@ -1,20 +1,19 @@
 package hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.SFTPv3Client;
 import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.SFTPv3FileHandle;
-import com.trilead.ssh2.SFTPv3FileAttributes;
 import com.trilead.ssh2.SFTPException;
+import com.trilead.ssh2.SFTPv3Client;
+import com.trilead.ssh2.SFTPv3FileAttributes;
+import com.trilead.ssh2.SFTPv3FileHandle;
 import com.trilead.ssh2.sftp.ErrorCodes;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.InputStream;
-
 import hudson.util.IOException2;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * TODO: moved to Hudson core, so pick it up from there.
+ *
  * @author Kohsuke Kawaguchi
  */
 public class SFTPClient extends SFTPv3Client {
@@ -26,7 +25,7 @@ public class SFTPClient extends SFTPv3Client {
      * Checks if the given path exists.
      */
     public boolean exists(String path) throws IOException {
-        return _stat(path)!=null;
+        return _stat(path) != null;
     }
 
     /**
@@ -37,10 +36,11 @@ public class SFTPClient extends SFTPv3Client {
             return stat(path);
         } catch (SFTPException e) {
             int c = e.getServerErrorCode();
-            if (c==ErrorCodes.SSH_FX_NO_SUCH_FILE || c==ErrorCodes.SSH_FX_NO_SUCH_PATH)
+            if (c == ErrorCodes.SSH_FX_NO_SUCH_FILE || c == ErrorCodes.SSH_FX_NO_SUCH_PATH) {
                 return null;
-            else
+            } else {
                 throw e;
+            }
         }
     }
 
@@ -49,17 +49,19 @@ public class SFTPClient extends SFTPv3Client {
      */
     public void mkdirs(String path, int posixPermission) throws IOException {
         SFTPv3FileAttributes atts = _stat(path);
-        if (atts!=null && atts.isDirectory())
+        if (atts != null && atts.isDirectory()) {
             return;
+        }
 
         int idx = path.lastIndexOf("/");
-        if (idx>0)
-            mkdirs(path.substring(0,idx), posixPermission);
+        if (idx > 0) {
+            mkdirs(path.substring(0, idx), posixPermission);
+        }
 
         try {
             mkdir(path, posixPermission);
         } catch (IOException e) {
-            throw new IOException2("Failed to mkdir "+path,e);
+            throw new IOException2("Failed to mkdir " + path, e);
         }
     }
 
@@ -70,13 +72,14 @@ public class SFTPClient extends SFTPv3Client {
         final SFTPv3FileHandle h = createFile(path);
         return new OutputStream() {
             private long offset = 0;
+
             public void write(int b) throws IOException {
-                write(new byte[]{(byte)b});
+                write(new byte[]{(byte) b});
             }
 
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
-                SFTPClient.this.write(h,offset,b,off,len);
+                SFTPClient.this.write(h, offset, b, off, len);
                 offset += len;
             }
 
@@ -94,15 +97,18 @@ public class SFTPClient extends SFTPv3Client {
 
             public int read() throws IOException {
                 byte[] b = new byte[1];
-                if(read(b)<0)
+                if (read(b) < 0) {
                     return -1;
+                }
                 return b[0];
             }
 
             @Override
             public int read(byte[] b, int off, int len) throws IOException {
-                int r = SFTPClient.this.read(h,offset,b,off,len);
-                if (r<0)    return -1;
+                int r = SFTPClient.this.read(h, offset, b, off, len);
+                if (r < 0) {
+                    return -1;
+                }
                 offset += r;
                 return r;
             }
