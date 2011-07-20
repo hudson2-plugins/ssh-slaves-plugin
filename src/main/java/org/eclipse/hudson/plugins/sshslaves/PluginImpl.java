@@ -1,4 +1,4 @@
-package hudson.plugins.sshslaves;
+package org.eclipse.hudson.plugins.sshslaves;
 
 import java.util.ArrayList;
 import java.util.List;

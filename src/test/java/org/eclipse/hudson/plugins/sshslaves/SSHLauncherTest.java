@@ -1,4 +1,4 @@
-package hudson.plugins.sshslaves;
+package org.eclipse.hudson.plugins.sshslaves;
 
 import hudson.model.Node.Mode;
 import hudson.model.Slave;
@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.util.Collections;
+import org.eclipse.hudson.plugins.sshslaves.SSHLauncher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.jvnet.hudson.test.HudsonTestCase;

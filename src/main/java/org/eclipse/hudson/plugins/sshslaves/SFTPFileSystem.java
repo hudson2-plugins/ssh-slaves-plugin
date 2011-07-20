@@ -1,4 +1,4 @@
-package hudson.plugins.sshslaves;
+package org.eclipse.hudson.plugins.sshslaves;
 
 import com.trilead.ssh2.SFTPv3DirectoryEntry;
 import hudson.tools.JDKInstaller.FileSystem;

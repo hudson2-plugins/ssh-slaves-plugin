@@ -1,4 +1,4 @@
-package hudson.plugins.sshslaves;
+package org.eclipse.hudson.plugins.sshslaves;
 
 import hudson.Extension;
 import hudson.model.TaskListener;
