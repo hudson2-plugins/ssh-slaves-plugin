@@ -1,13 +1,26 @@
+/*******************************************************************************
+ *
+ * Copyright (c) 2011 Oracle Corporation.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *
+ * Stephen Connolly, Nikita Levyankov
+ *
+ *******************************************************************************/
 package org.eclipse.hudson.plugins.sshslaves;
 
+import com.trilead.ssh2.Connection;
+import hudson.Plugin;
 import hudson.model.Hudson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.trilead.ssh2.Connection;
-import hudson.Plugin;
 
 /**
  * Entry point of ssh-slaves plugin.
@@ -25,7 +38,6 @@ public class PluginImpl extends Plugin {
     /**
      * {@inheritDoc}
      */
-    @Override
     public void start() throws Exception {
         LOGGER.log(Level.FINE, "Starting SSH Slaves plugin");
         //Add alias for launcher in order to unmarshal hudson configuration on startup.
@@ -35,7 +47,6 @@ public class PluginImpl extends Plugin {
     /**
      * {@inheritDoc}
      */
-    @Override
     public void stop() throws Exception {
         LOGGER.log(Level.FINE, "Stopping SSH Slaves plugin.");
         closeRegisteredConnections();
@@ -48,7 +59,7 @@ public class PluginImpl extends Plugin {
     private static synchronized void closeRegisteredConnections() {
         for (Connection connection : activeConnections) {
             LOGGER.log(Level.INFO, "Forcing connection to {0}:{1} closed.",
-                    new Object[]{connection.getHostname(), connection.getPort()});
+                new Object[]{connection.getHostname(), connection.getPort()});
             // force closed just in case
             connection.close();
         }

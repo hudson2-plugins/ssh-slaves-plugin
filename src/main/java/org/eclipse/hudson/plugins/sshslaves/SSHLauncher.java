@@ -1,3 +1,17 @@
+/*******************************************************************************
+ *
+ * Copyright (c) 2011 Oracle Corporation.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *
+ * Kohsuke Kawaguchi, Stephen Connolly, Marco Palinar, Jon Schewe, Nikita Levyankov
+ *
+ *******************************************************************************/
 package org.eclipse.hudson.plugins.sshslaves;
 
 import com.trilead.ssh2.Connection;
@@ -182,7 +196,7 @@ public class SSHLauncher extends ComputerLauncher {
 
     private static String getWorkingDirectory(Slave slave) {
         String workingDirectory = slave.getRemoteFS();
-        while(workingDirectory.endsWith("/")) {
+        while (workingDirectory.endsWith("/")) {
             workingDirectory = workingDirectory.substring(0, workingDirectory.length() - 1);
         }
         return workingDirectory;
@@ -209,11 +223,11 @@ public class SSHLauncher extends ComputerLauncher {
             startSlave(computer, listener, java, workingDirectory);
 
             PluginImpl.register(connection);
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             e.printStackTrace(listener.error(Messages.SSHLauncher_UnexpectedError()));
-        } catch(Error e) {
+        } catch (Error e) {
             e.printStackTrace(listener.error(Messages.SSHLauncher_UnexpectedError()));
-        } catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace(listener.getLogger());
             connection.close();
             connection = null;
@@ -233,22 +247,22 @@ public class SSHLauncher extends ComputerLauncher {
      */
     protected String resolveJava(SlaveComputer computer, TaskListener listener)
         throws InterruptedException, IOException2 {
-        if(StringUtils.isNotBlank(javaPath)) {
+        if (StringUtils.isNotBlank(javaPath)) {
             return javaPath;
         }
         String workingDirectory = getWorkingDirectory(computer);
 
         List<String> tried = new ArrayList<String>();
-        for(JavaProvider provider : JavaProvider.all()) {
-            for(String javaCommand : provider.getJavas(computer, listener, connection)) {
+        for (JavaProvider provider : JavaProvider.all()) {
+            for (String javaCommand : provider.getJavas(computer, listener, connection)) {
                 LOGGER.fine("Trying Java at " + javaCommand);
                 try {
                     tried.add(javaCommand);
                     String java = checkJavaVersion(listener, javaCommand);
-                    if(java != null) {
+                    if (java != null) {
                         return java;
                     }
-                } catch(IOException e) {
+                } catch (IOException e) {
                     LOGGER.log(FINE, "Failed to check the Java version", e);
                     // try the next one
                 }
@@ -258,7 +272,7 @@ public class SSHLauncher extends ComputerLauncher {
         // attempt auto JDK installation
         try {
             return attemptToInstallJDK(listener, workingDirectory);
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new IOException2("Could not find any known supported java version in " + tried
                 + ", and we also failed to install JDK as a fallback", e);
         }
@@ -275,7 +289,7 @@ public class SSHLauncher extends ComputerLauncher {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         connection.exec("true", baos);
         String s = baos.toString();
-        if(s.length() != 0) {
+        if (s.length() != 0) {
             listener.getLogger().println(Messages.SSHLauncher_SSHHeeaderJunkDetected());
             listener.getLogger().println(s);
             throw new AbortException();
@@ -294,7 +308,7 @@ public class SSHLauncher extends ComputerLauncher {
     private String attemptToInstallJDK(TaskListener listener, String workingDirectory)
         throws IOException, InterruptedException {
         ByteArrayOutputStream unameOutput = new ByteArrayOutputStream();
-        if(connection.exec("uname -a", new TeeOutputStream(unameOutput, listener.getLogger())) != 0) {
+        if (connection.exec("uname -a", new TeeOutputStream(unameOutput, listener.getLogger())) != 0) {
             throw new IOException("Failed to run 'uname' to obtain the environment");
         }
 
@@ -313,30 +327,30 @@ public class SSHLauncher extends ComputerLauncher {
         String uname = unameOutput.toString();
         Platform p = null;
         CPU cpu = null;
-        if(uname.contains("GNU/Linux")) {
+        if (uname.contains("GNU/Linux")) {
             p = Platform.LINUX;
         }
-        if(uname.contains("SunOS")) {
+        if (uname.contains("SunOS")) {
             p = Platform.SOLARIS;
         }
-        if(uname.contains("CYGWIN")) {
+        if (uname.contains("CYGWIN")) {
             p = Platform.WINDOWS;
         }
-        if(uname.contains("Windows_NT")) {
+        if (uname.contains("Windows_NT")) {
             p = Platform.WINDOWS;
         }
 
-        if(uname.contains("sparc")) {
+        if (uname.contains("sparc")) {
             cpu = CPU.Sparc;
         }
-        if(uname.contains("x86_64")) {
+        if (uname.contains("x86_64")) {
             cpu = CPU.amd64;
         }
-        if(Pattern.compile("\\bi?[3-6]86\\b").matcher(uname).find()) {
+        if (Pattern.compile("\\bi?[3-6]86\\b").matcher(uname).find()) {
             cpu = CPU.i386;  // look for ix86 as a word
         }
 
-        if(p == null || cpu == null) {
+        if (p == null || cpu == null) {
             throw new IOException(Messages.SSHLauncher_FailedToDetectEnvironment(uname));
         }
 
@@ -387,28 +401,28 @@ public class SSHLauncher extends ComputerLauncher {
             computer.setChannel(out, session.getStdin(), listener.getLogger(), new Channel.Listener() {
                 @Override
                 public void onClosed(Channel channel, IOException cause) {
-                    if(cause != null) {
+                    if (cause != null) {
                         cause.printStackTrace(listener.error(hudson.model.Messages.Slave_Terminated(getTimestamp())));
                     }
                     try {
                         session.close();
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         t.printStackTrace(listener.error(Messages.SSHLauncher_ErrorWhileClosingConnection()));
                     }
                     try {
                         out.close();
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         t.printStackTrace(listener.error(Messages.SSHLauncher_ErrorWhileClosingConnection()));
                     }
                     try {
                         err.close();
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         t.printStackTrace(listener.error(Messages.SSHLauncher_ErrorWhileClosingConnection()));
                     }
                 }
             });
 
-        } catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             session.close();
             throw new IOException2(Messages.SSHLauncher_AbortedDuringConnectionOpen(), e);
         }
@@ -432,11 +446,11 @@ public class SSHLauncher extends ComputerLauncher {
 
             try {
                 SFTPv3FileAttributes fileAttributes = sftpClient._stat(workingDirectory);
-                if(fileAttributes == null) {
+                if (fileAttributes == null) {
                     listener.getLogger().println(Messages.SSHLauncher_RemoteFSDoesNotExist(getTimestamp(),
                         workingDirectory));
                     sftpClient.mkdirs(workingDirectory, 700);
-                } else if(fileAttributes.isRegularFile()) {
+                } else if (fileAttributes.isRegularFile()) {
                     throw new IOException(Messages.SSHLauncher_RemoteFSIsAFile(workingDirectory));
                 }
 
@@ -444,9 +458,9 @@ public class SSHLauncher extends ComputerLauncher {
                     // try to delete the file in case the slave we are copying is shorter than the slave
                     // that is already there
                     sftpClient.rm(fileName);
-                } catch(IOException e) {
+                } catch (IOException e) {
                     // the file did not exist... so no need to delete it!
-                    LOGGER.log(Level.FINEST, "Couldn't delete "+ fileName + ". File doesn't exists.");
+                    LOGGER.log(Level.FINEST, "Couldn't delete " + fileName + ". File doesn't exists.");
                 }
 
                 listener.getLogger().println(Messages.SSHLauncher_CopyingSlaveJar(getTimestamp()));
@@ -458,21 +472,21 @@ public class SSHLauncher extends ComputerLauncher {
                         os);
                     listener.getLogger()
                         .println(Messages.SSHLauncher_CopiedXXXBytes(getTimestamp(), os.getByteCount()));
-                } catch(Exception e) {
+                } catch (Exception e) {
                     throw new IOException2(Messages.SSHLauncher_ErrorCopyingSlaveJarTo(fileName), e);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 throw new IOException2(Messages.SSHLauncher_ErrorCopyingSlaveJar(), e);
             }
-        } catch(IOException e) {
-            if(sftpClient == null) {
+        } catch (IOException e) {
+            if (sftpClient == null) {
                 // lets try to recover if the slave doesn't have an SFTP service
                 copySlaveJarUsingSCP(listener, workingDirectory);
             } else {
                 throw e;
             }
         } finally {
-            if(sftpClient != null) {
+            if (sftpClient != null) {
                 sftpClient.close();
             }
         }
@@ -492,11 +506,11 @@ public class SSHLauncher extends ComputerLauncher {
         SCPClient scp = new SCPClient(connection);
         try {
             // check if the working directory exists
-            if(connection.exec("test -d " + workingDirectory, listener.getLogger()) != 0) {
+            if (connection.exec("test -d " + workingDirectory, listener.getLogger()) != 0) {
                 listener.getLogger()
                     .println(Messages.SSHLauncher_RemoteFSDoesNotExist(getTimestamp(), workingDirectory));
                 // working directory doesn't exist, lets make it.
-                if(connection.exec("mkdir -p " + workingDirectory, listener.getLogger()) != 0) {
+                if (connection.exec("mkdir -p " + workingDirectory, listener.getLogger()) != 0) {
                     listener.getLogger().println("Failed to create " + workingDirectory);
                 }
             }
@@ -508,7 +522,7 @@ public class SSHLauncher extends ComputerLauncher {
             InputStream is = Hudson.getInstance().servletContext.getResourceAsStream("/WEB-INF/slave.jar");
             listener.getLogger().println(Messages.SSHLauncher_CopyingSlaveJar(getTimestamp()));
             scp.put(IOUtils.toByteArray(is), "slave.jar", workingDirectory, "0644");
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new IOException2(Messages.SSHLauncher_ErrorCopyingSlaveJar(), e);
         }
     }
@@ -528,7 +542,7 @@ public class SSHLauncher extends ComputerLauncher {
         BufferedReader r = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(out.toByteArray())));
         final String result = checkJavaVersion(listener.getLogger(), javaCommand, r, output);
 
-        if(null == result) {
+        if (null == result) {
             listener.getLogger().println(Messages.SSHLauncher_UknownJavaVersion(javaCommand));
             listener.getLogger().println(output);
             throw new IOException(Messages.SSHLauncher_UknownJavaVersion(javaCommand));
@@ -552,11 +566,11 @@ public class SSHLauncher extends ComputerLauncher {
                                       final BufferedReader r, final StringWriter output)
         throws IOException {
         String line;
-        while(null != (line = r.readLine())) {
+        while (null != (line = r.readLine())) {
             output.write(line);
             output.write("\n");
             line = line.toLowerCase();
-            if(line.startsWith("java version \"")
+            if (line.startsWith("java version \"")
                 || line.startsWith("openjdk version \"")) {
                 final String versionStr = line.substring(
                     line.indexOf('\"') + 1, line.lastIndexOf('\"'));
@@ -566,10 +580,10 @@ public class SSHLauncher extends ComputerLauncher {
                 try {
                     final Number version =
                         NumberFormat.getNumberInstance(Locale.US).parse(versionStr);
-                    if(version.doubleValue() < 1.5) {
+                    if (version.doubleValue() < 1.5) {
                         throw new IOException(Messages.SSHLauncher_NoJavaFound(line));
                     }
-                } catch(final ParseException e) {
+                } catch (final ParseException e) {
                     throw new IOException(Messages.SSHLauncher_NoJavaFound(line));
                 }
                 return javaCommand;
@@ -583,7 +597,7 @@ public class SSHLauncher extends ComputerLauncher {
         connection.connect();
 
         String username = this.username;
-        if(fixEmpty(username) == null) {
+        if (fixEmpty(username) == null) {
             username = System.getProperty("user.name");
             LOGGER.fine("Defaulting the user name to " + username);
         }
@@ -591,27 +605,27 @@ public class SSHLauncher extends ComputerLauncher {
         String pass = Util.fixNull(getPassword());
 
         boolean isAuthenticated = false;
-        if(fixEmpty(privatekey) == null && fixEmpty(pass) == null) {
+        if (fixEmpty(privatekey) == null && fixEmpty(pass) == null) {
             // check the default key locations if no authentication method is explicitly configured.
             File home = new File(System.getProperty("user.home"));
-            for(String keyName : Arrays.asList("id_rsa", "id_dsa", "identity")) {
+            for (String keyName : Arrays.asList("id_rsa", "id_dsa", "identity")) {
                 File key = new File(home, ".ssh/" + keyName);
-                if(key.exists()) {
+                if (key.exists()) {
                     listener.getLogger()
                         .println(Messages.SSHLauncher_AuthenticatingPublicKey(getTimestamp(), username, key));
                     isAuthenticated = connection.authenticateWithPublicKey(username, key, null);
                 }
-                if(isAuthenticated) {
+                if (isAuthenticated) {
                     break;
                 }
             }
         }
-        if(!isAuthenticated && fixEmpty(privatekey) != null) {
+        if (!isAuthenticated && fixEmpty(privatekey) != null) {
             File key = new File(privatekey);
-            if(key.exists()) {
+            if (key.exists()) {
                 listener.getLogger()
                     .println(Messages.SSHLauncher_AuthenticatingPublicKey(getTimestamp(), username, privatekey));
-                if(PuTTYKey.isPuTTYKeyFile(key)) {
+                if (PuTTYKey.isPuTTYKeyFile(key)) {
                     LOGGER.fine(key + " is a PuTTY key file");
                     String openSshKey = new PuTTYKey(key, pass).toOpenSSH();
                     isAuthenticated = connection.authenticateWithPublicKey(username, openSshKey.toCharArray(), pass);
@@ -620,13 +634,13 @@ public class SSHLauncher extends ComputerLauncher {
                 }
             }
         }
-        if(!isAuthenticated) {
+        if (!isAuthenticated) {
             listener.getLogger()
                 .println(Messages.SSHLauncher_AuthenticatingUserPass(getTimestamp(), username, "******"));
             isAuthenticated = connection.authenticateWithPassword(username, pass);
         }
 
-        if(isAuthenticated && connection.isAuthenticationComplete()) {
+        if (isAuthenticated && connection.isAuthenticationComplete()) {
             listener.getLogger().println(Messages.SSHLauncher_AuthenticationSuccessful(getTimestamp()));
         } else {
             listener.getLogger().println(Messages.SSHLauncher_AuthenticationFailed(getTimestamp()));
@@ -643,8 +657,8 @@ public class SSHLauncher extends ComputerLauncher {
     @Override
     public synchronized void afterDisconnect(SlaveComputer slaveComputer, TaskListener listener) {
         Slave n = slaveComputer.getNode();
-        if(connection != null) {
-            if(n != null) {
+        if (connection != null) {
+            if (n != null) {
                 String workingDirectory = getWorkingDirectory(n);
                 String fileName = workingDirectory + "/slave.jar";
 
@@ -652,18 +666,18 @@ public class SSHLauncher extends ComputerLauncher {
                 try {
                     sftpClient = new SFTPv3Client(connection);
                     sftpClient.rm(fileName);
-                } catch(Exception e) {
-                    if(sftpClient == null) {// system without SFTP
+                } catch (Exception e) {
+                    if (sftpClient == null) {// system without SFTP
                         try {
                             connection.exec("rm " + fileName, listener.getLogger());
-                        } catch(Exception x) {
+                        } catch (Exception x) {
                             x.printStackTrace(listener.error(Messages.SSHLauncher_ErrorDeletingFile(getTimestamp())));
                         }
                     } else {
                         e.printStackTrace(listener.error(Messages.SSHLauncher_ErrorDeletingFile(getTimestamp())));
                     }
                 } finally {
-                    if(sftpClient != null) {
+                    if (sftpClient != null) {
                         sftpClient.close();
                     }
                 }
@@ -750,7 +764,7 @@ public class SSHLauncher extends ComputerLauncher {
         @Override
         public String getHelpFile(String fieldName) {
             String n = super.getHelpFile(fieldName);
-            if(n == null) {
+            if (n == null) {
                 n = Hudson.getInstance().getDescriptor(SSHConnector.class).getHelpFile(fieldName);
             }
             return n;
@@ -772,17 +786,17 @@ public class SSHLauncher extends ComputerLauncher {
                 getWorkingDirectory(computer) + "/jdk/bin/java")); // this is where we attempt to auto-install
 
             DescribableList<NodeProperty<?>, NodePropertyDescriptor> list = computer.getNode().getNodeProperties();
-            if(list != null) {
+            if (list != null) {
                 Descriptor jdk = Hudson.getInstance().getDescriptorByType(JDK.DescriptorImpl.class);
-                for(NodeProperty prop : list) {
-                    if(prop instanceof EnvironmentVariablesNodeProperty) {
+                for (NodeProperty prop : list) {
+                    if (prop instanceof EnvironmentVariablesNodeProperty) {
                         EnvVars env = ((EnvironmentVariablesNodeProperty) prop).getEnvVars();
-                        if(env != null && env.containsKey("JAVA_HOME")) {
+                        if (env != null && env.containsKey("JAVA_HOME")) {
                             javas.add(env.get("JAVA_HOME") + "/bin/java");
                         }
-                    } else if(prop instanceof ToolLocationNodeProperty) {
-                        for(ToolLocation tool : ((ToolLocationNodeProperty) prop).getLocations()) {
-                            if(tool.getType() == jdk) {
+                    } else if (prop instanceof ToolLocationNodeProperty) {
+                        for (ToolLocation tool : ((ToolLocationNodeProperty) prop).getLocations()) {
+                            if (tool.getType() == jdk) {
                                 javas.add(tool.getHome() + "/bin/java");
                             }
                         }
