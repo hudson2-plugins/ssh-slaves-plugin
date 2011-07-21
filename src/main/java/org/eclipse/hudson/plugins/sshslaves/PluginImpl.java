@@ -1,5 +1,6 @@
 package org.eclipse.hudson.plugins.sshslaves;
 
+import hudson.model.Hudson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -27,6 +28,8 @@ public class PluginImpl extends Plugin {
     @Override
     public void start() throws Exception {
         LOGGER.log(Level.FINE, "Starting SSH Slaves plugin");
+        //Add alias for launcher in order to unmarshal hudson configuration on startup.
+        Hudson.XSTREAM.alias("hudson.plugins.sshslaves.SSHLauncher", SSHLauncher.class);
     }
 
     /**

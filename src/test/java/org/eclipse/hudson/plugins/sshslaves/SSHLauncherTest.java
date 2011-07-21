@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.util.Collections;
-import org.eclipse.hudson.plugins.sshslaves.SSHLauncher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.jvnet.hudson.test.HudsonTestCase;
@@ -57,10 +56,8 @@ public class SSHLauncherTest extends HudsonTestCase {
      */
     private static boolean checkSupported(final String testVersionOutput) throws IOException {
         final String javaCommand = "testing-java";
-        final InputStream versionStream = SSHLauncherTest.class
-            .getResourceAsStream(testVersionOutput);
-        final BufferedReader r = new BufferedReader(new InputStreamReader(
-            versionStream));
+        final InputStream versionStream = SSHLauncherTest.class.getResourceAsStream(testVersionOutput);
+        final BufferedReader r = new BufferedReader(new InputStreamReader(versionStream));
         final StringWriter output = new StringWriter();
         final String result = new SSHLauncher(null, 0, null, null, null, null, null)
             .checkJavaVersion(System.out, javaCommand, r, output);
