@@ -3,14 +3,14 @@
     <parent>
         <groupId>org.jvnet.hudson.plugins</groupId>
         <artifactId>hudson-plugin-parent</artifactId>
-        <version>2.0.1</version>
+        <version>2.1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>org.hudsonci.plugins</groupId>
     <artifactId>ssh-slaves</artifactId>
     <packaging>hpi</packaging>
-    <version>2.0.2-SNAPSHOT</version>
+    <version>2.1.1-SNAPSHOT</version>
     <name>Hudson SSH Slaves plugin</name>
     <url>http://wiki.hudson-ci.org/display/HUDSON/SSH+Slaves+plugin</url>
     <description>Plugin allows you to manage slaves running on *nix machines over SSH.</description>
@@ -32,9 +32,9 @@
     <dependencies>
         <dependency>
             <groupId>org.jvnet.hudson.main</groupId>
-            <artifactId>hudson-test-harness</artifactId>
-            <version>${project.parent.version}</version>
+            <artifactId>hudson-test-framework</artifactId>
             <scope>test</scope>
+            <version>${project.parent.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jvnet.hudson.plugins</groupId>
