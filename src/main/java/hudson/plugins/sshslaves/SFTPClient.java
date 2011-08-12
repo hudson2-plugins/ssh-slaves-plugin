@@ -1,11 +1,11 @@
 package hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.SFTPException;
-import com.trilead.ssh2.SFTPv3Client;
-import com.trilead.ssh2.SFTPv3FileAttributes;
-import com.trilead.ssh2.SFTPv3FileHandle;
-import com.trilead.ssh2.sftp.ErrorCodes;
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.SFTPException;
+import ch.ethz.ssh2.SFTPv3Client;
+import ch.ethz.ssh2.SFTPv3FileAttributes;
+import ch.ethz.ssh2.SFTPv3FileHandle;
+import ch.ethz.ssh2.sftp.ErrorCodes;
 import hudson.util.IOException2;
 import java.io.IOException;
 import java.io.InputStream;
