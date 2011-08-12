@@ -1,14 +1,13 @@
 package hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.Connection;
+import ch.ethz.ssh2.Connection;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
-import hudson.slaves.SlaveComputer;
 import hudson.model.Hudson;
 import hudson.model.TaskListener;
-
-import java.util.List;
+import hudson.slaves.SlaveComputer;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Guess where Java is.

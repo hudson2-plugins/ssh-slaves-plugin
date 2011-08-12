@@ -1,11 +1,11 @@
 package hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.SCPClient;
-import com.trilead.ssh2.SFTPv3Client;
-import com.trilead.ssh2.SFTPv3FileAttributes;
-import com.trilead.ssh2.Session;
-import com.trilead.ssh2.StreamGobbler;
+import ch.ethz.ssh2.ChannelCondition;
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.SFTPv3Client;
+import ch.ethz.ssh2.SFTPv3FileAttributes;
+import ch.ethz.ssh2.Session;
+import ch.ethz.ssh2.StreamGobbler;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.net.URL;
@@ -273,7 +274,7 @@ public class SSHLauncher extends ComputerLauncher {
      */
     private void verifyNoHeaderJunk(TaskListener listener) throws IOException, InterruptedException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        connection.exec("true", baos);
+        exec("true", baos);
         String s = baos.toString();
         if(s.length() != 0) {
             listener.getLogger().println(Messages.SSHLauncher_SSHHeeaderJunkDetected());
@@ -294,7 +295,7 @@ public class SSHLauncher extends ComputerLauncher {
     private String attemptToInstallJDK(TaskListener listener, String workingDirectory)
         throws IOException, InterruptedException {
         ByteArrayOutputStream unameOutput = new ByteArrayOutputStream();
-        if(connection.exec("uname -a", new TeeOutputStream(unameOutput, listener.getLogger())) != 0) {
+        if (exec("uname -a", new TeeOutputStream(unameOutput, listener.getLogger())) != 0) {
             throw new IOException("Failed to run 'uname' to obtain the environment");
         }
 
@@ -345,7 +346,7 @@ public class SSHLauncher extends ComputerLauncher {
 
         SFTPClient sftp = new SFTPClient(connection);
         // wipe out and recreate the Java directory
-        connection.exec("rm -rf " + javaDir, listener.getLogger());
+        exec("rm -rf " + javaDir, listener.getLogger());
         sftp.mkdirs(javaDir, 755);
 
         JDKInstaller jdk = new JDKInstaller("jdk-6u16-oth-JPR@CDS-CDS_Developer", true);
@@ -489,20 +490,20 @@ public class SSHLauncher extends ComputerLauncher {
     private void copySlaveJarUsingSCP(TaskListener listener, String workingDirectory)
         throws IOException, InterruptedException {
         listener.getLogger().println(Messages.SSHLauncher_StartingSCPClient(getTimestamp()));
-        SCPClient scp = new SCPClient(connection);
+        HudsonSCPClient scp = new HudsonSCPClient(connection);
         try {
             // check if the working directory exists
-            if(connection.exec("test -d " + workingDirectory, listener.getLogger()) != 0) {
+            if (exec("test -d " + workingDirectory, listener.getLogger()) != 0) {
                 listener.getLogger()
                     .println(Messages.SSHLauncher_RemoteFSDoesNotExist(getTimestamp(), workingDirectory));
                 // working directory doesn't exist, lets make it.
-                if(connection.exec("mkdir -p " + workingDirectory, listener.getLogger()) != 0) {
+                if (exec("mkdir -p " + workingDirectory, listener.getLogger()) != 0) {
                     listener.getLogger().println("Failed to create " + workingDirectory);
                 }
             }
 
             // delete the slave jar as we do with SFTP
-            connection.exec("rm " + workingDirectory + "/slave.jar", new NullStream());
+            exec("rm " + workingDirectory + "/slave.jar", new NullStream());
 
             // SCP it to the slave. hudson.Util.ByteArrayOutputStream2 doesn't work for this. It pads the byte array.
             InputStream is = Hudson.getInstance().servletContext.getResourceAsStream("/WEB-INF/slave.jar");
@@ -515,7 +516,7 @@ public class SSHLauncher extends ComputerLauncher {
 
     protected void reportEnvironment(TaskListener listener) throws IOException, InterruptedException {
         listener.getLogger().println(Messages._SSHLauncher_RemoteUserEnvironment(getTimestamp()));
-        connection.exec("set", listener.getLogger());
+        exec("set", listener.getLogger());
     }
 
     private String checkJavaVersion(TaskListener listener, String javaCommand)
@@ -524,7 +525,7 @@ public class SSHLauncher extends ComputerLauncher {
         StringWriter output = new StringWriter();   // record output from Java
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        connection.exec(javaCommand + " " + getJvmOptions() + " -version", out);
+        exec(javaCommand + " " + getJvmOptions() + " -version", out);
         BufferedReader r = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(out.toByteArray())));
         final String result = checkJavaVersion(listener.getLogger(), javaCommand, r, output);
 
@@ -655,7 +656,7 @@ public class SSHLauncher extends ComputerLauncher {
                 } catch(Exception e) {
                     if(sftpClient == null) {// system without SFTP
                         try {
-                            connection.exec("rm " + fileName, listener.getLogger());
+                            exec("rm " + fileName, listener.getLogger());
                         } catch(Exception x) {
                             x.printStackTrace(listener.error(Messages.SSHLauncher_ErrorDeletingFile(getTimestamp())));
                         }
@@ -792,5 +793,73 @@ public class SSHLauncher extends ComputerLauncher {
             return javas;
         }
 
+    }
+
+    /**
+     * Executes a process remotely and blocks until its completion.
+     *
+     * @param command command for execution,
+     * @param output The stdout/stderr will be sent to this stream.
+     * @return result of command execution. -1 by default.
+     * @throws IOException          if any
+     * @throws InterruptedException if any.
+     */
+    public int exec(String command, OutputStream output) throws IOException, InterruptedException {
+        if (null != connection) {
+            Session session = connection.openSession();
+            try {
+                session.execCommand(command);
+                PumpThread t1 = new PumpThread(session.getStdout(), output);
+                t1.start();
+                PumpThread t2 = new PumpThread(session.getStderr(), output);
+                t2.start();
+                session.getStdin().close();
+                t1.join();
+                t2.join();
+                // wait for some time since the delivery of the exit status often gets delayed
+                session.waitForCondition(ChannelCondition.EXIT_STATUS, 3000);
+                Integer r = session.getExitStatus();
+                if (r != null) {
+                    return r;
+                }
+                return -1;
+            } finally {
+                session.close();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Pumps {@link InputStream} to {@link OutputStream}.
+     *
+     * @author Kohsuke Kawaguchi
+     */
+    private static final class PumpThread extends Thread {
+        private final InputStream in;
+        private final OutputStream out;
+
+        public PumpThread(InputStream in, OutputStream out) {
+            super("pump thread");
+            this.in = in;
+            this.out = out;
+        }
+
+        @Override
+        public void run() {
+            byte[] buf = new byte[1024];
+            try {
+                while (true) {
+                    int len = in.read(buf);
+                    if (len < 0) {
+                        in.close();
+                        return;
+                    }
+                    out.write(buf, 0, len);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

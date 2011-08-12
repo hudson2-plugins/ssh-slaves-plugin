@@ -1,12 +1,11 @@
 package hudson.plugins.sshslaves;
 
+import ch.ethz.ssh2.Connection;
+import hudson.Plugin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.trilead.ssh2.Connection;
-import hudson.Plugin;
 
 /**
  * Entry point of ssh-slaves plugin.

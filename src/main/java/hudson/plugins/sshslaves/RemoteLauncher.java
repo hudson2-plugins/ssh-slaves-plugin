@@ -1,8 +1,8 @@
 package hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.ChannelCondition;
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.Session;
+import ch.ethz.ssh2.ChannelCondition;
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.Session;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
