@@ -21,9 +21,6 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
 import hudson.slaves.SlaveComputer;
-import hudson.tools.JDKInstaller;
-import hudson.tools.JDKInstaller.CPU;
-import hudson.tools.JDKInstaller.Platform;
 import hudson.tools.ToolLocationNodeProperty;
 import hudson.tools.ToolLocationNodeProperty.ToolLocation;
 import hudson.util.DescribableList;
@@ -31,7 +28,6 @@ import hudson.util.IOException2;
 import hudson.util.NullStream;
 import hudson.util.Secret;
 import hudson.util.StreamCopyThread;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +38,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
-import java.net.URL;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -52,10 +47,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CountingOutputStream;
-import org.apache.commons.io.output.TeeOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.putty.PuTTYKey;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -237,7 +230,7 @@ public class SSHLauncher extends ComputerLauncher {
         if(StringUtils.isNotBlank(javaPath)) {
             return javaPath;
         }
-        String workingDirectory = getWorkingDirectory(computer);
+//        String workingDirectory = getWorkingDirectory(computer);
 
         List<String> tried = new ArrayList<String>();
         for(JavaProvider provider : JavaProvider.all()) {
@@ -255,14 +248,16 @@ public class SSHLauncher extends ComputerLauncher {
                 }
             }
         }
-
+        //TODO enable installer when it will be ready
+        throw new InterruptedException(
+            "Could not find any known supported java version, please install JDK on slave node");
         // attempt auto JDK installation
-        try {
-            return attemptToInstallJDK(listener, workingDirectory);
-        } catch(IOException e) {
-            throw new IOException2("Could not find any known supported java version in " + tried
-                + ", and we also failed to install JDK as a fallback", e);
-        }
+//        try {
+//            return attemptToInstallJDK(listener, workingDirectory);
+//        } catch(IOException e) {
+//            throw new IOException2("Could not find any known supported java version in " + tried
+//                + ", and we also failed to install JDK as a fallback", e);
+//        }
     }
 
     /**
@@ -292,74 +287,74 @@ public class SSHLauncher extends ComputerLauncher {
      * @throws IOException          if any.
      * @throws InterruptedException if any.
      */
-    private String attemptToInstallJDK(TaskListener listener, String workingDirectory)
-        throws IOException, InterruptedException {
-        ByteArrayOutputStream unameOutput = new ByteArrayOutputStream();
-        if (exec("uname -a", new TeeOutputStream(unameOutput, listener.getLogger())) != 0) {
-            throw new IOException("Failed to run 'uname' to obtain the environment");
-        }
-
-        // guess the platform from uname output. I don't use the specific options because I'm not sure
-        // if various platforms have the consistent options
-        //
-        // === some of the output collected ====
-        // Linux bear 2.6.28-15-generic #49-Ubuntu SMP Tue Aug 18 19:25:34 UTC 2009 x86_64 GNU/Linux
-        // Linux wssqe20 2.6.24-24-386 #1 Tue Aug 18 16:24:26 UTC 2009 i686 GNU/Linux
-        // SunOS hudson 5.11 snv_79a i86pc i386 i86pc
-        // SunOS legolas 5.9 Generic_112233-12 sun4u sparc SUNW,Sun-Fire-280R
-        // CYGWIN_NT-5.1 franz 1.7.0(0.185/5/3) 2008-07-22 19:09 i686 Cygwin
-        // Windows_NT WINXPIE7 5 01 586
-        //        (this one is from MKS)
-
-        String uname = unameOutput.toString();
-        Platform p = null;
-        CPU cpu = null;
-        if(uname.contains("GNU/Linux")) {
-            p = Platform.LINUX;
-        }
-        if(uname.contains("SunOS")) {
-            p = Platform.SOLARIS;
-        }
-        if(uname.contains("CYGWIN")) {
-            p = Platform.WINDOWS;
-        }
-        if(uname.contains("Windows_NT")) {
-            p = Platform.WINDOWS;
-        }
-
-        if(uname.contains("sparc")) {
-            cpu = CPU.Sparc;
-        }
-        if(uname.contains("x86_64")) {
-            cpu = CPU.amd64;
-        }
-        if(Pattern.compile("\\bi?[3-6]86\\b").matcher(uname).find()) {
-            cpu = CPU.i386;  // look for ix86 as a word
-        }
-
-        if(p == null || cpu == null) {
-            throw new IOException(Messages.SSHLauncher_FailedToDetectEnvironment(uname));
-        }
-
-        String javaDir = workingDirectory + "/jdk"; // this is where we install Java to
-        String bundleFile = workingDirectory + "/" + p.bundleFileName; // this is where we download the bundle to
-
-        SFTPClient sftp = new SFTPClient(connection);
-        // wipe out and recreate the Java directory
-        exec("rm -rf " + javaDir, listener.getLogger());
-        sftp.mkdirs(javaDir, 755);
-
-        JDKInstaller jdk = new JDKInstaller("jdk-6u16-oth-JPR@CDS-CDS_Developer", true);
-        URL bundle = jdk.locate(listener, p, cpu);
-
-        listener.getLogger().println("Installing JDK6u16");
-        Util.copyStreamAndClose(bundle.openStream(), new BufferedOutputStream(sftp.writeToFile(bundleFile), 32 * 1024));
-        sftp.chmod(bundleFile, 755);
-
-        jdk.install(new RemoteLauncher(listener, connection), p, new SFTPFileSystem(sftp), listener, javaDir,
-            bundleFile);
-        return javaDir + "/bin/java";
-    }
+//    private String attemptToInstallJDK(TaskListener listener, String workingDirectory)
+//        throws IOException, InterruptedException {
+//        ByteArrayOutputStream unameOutput = new ByteArrayOutputStream();
+//        if (exec("uname -a", new TeeOutputStream(unameOutput, listener.getLogger())) != 0) {
+//            throw new IOException("Failed to run 'uname' to obtain the environment");
+//        }
+//
+//        // guess the platform from uname output. I don't use the specific options because I'm not sure
+//        // if various platforms have the consistent options
+//        //
+//        // === some of the output collected ====
+//        // Linux bear 2.6.28-15-generic #49-Ubuntu SMP Tue Aug 18 19:25:34 UTC 2009 x86_64 GNU/Linux
+//        // Linux wssqe20 2.6.24-24-386 #1 Tue Aug 18 16:24:26 UTC 2009 i686 GNU/Linux
+//        // SunOS hudson 5.11 snv_79a i86pc i386 i86pc
+//        // SunOS legolas 5.9 Generic_112233-12 sun4u sparc SUNW,Sun-Fire-280R
+//        // CYGWIN_NT-5.1 franz 1.7.0(0.185/5/3) 2008-07-22 19:09 i686 Cygwin
+//        // Windows_NT WINXPIE7 5 01 586
+//        //        (this one is from MKS)
+//
+//        String uname = unameOutput.toString();
+//        Platform p = null;
+//        CPU cpu = null;
+//        if(uname.contains("GNU/Linux")) {
+//            p = Platform.LINUX;
+//        }
+//        if(uname.contains("SunOS")) {
+//            p = Platform.SOLARIS;
+//        }
+//        if(uname.contains("CYGWIN")) {
+//            p = Platform.WINDOWS;
+//        }
+//        if(uname.contains("Windows_NT")) {
+//            p = Platform.WINDOWS;
+//        }
+//
+//        if(uname.contains("sparc")) {
+//            cpu = CPU.Sparc;
+//        }
+//        if(uname.contains("x86_64")) {
+//            cpu = CPU.amd64;
+//        }
+//        if(Pattern.compile("\\bi?[3-6]86\\b").matcher(uname).find()) {
+//            cpu = CPU.i386;  // look for ix86 as a word
+//        }
+//
+//        if(p == null || cpu == null) {
+//            throw new IOException(Messages.SSHLauncher_FailedToDetectEnvironment(uname));
+//        }
+//
+//        String javaDir = workingDirectory + "/jdk"; // this is where we install Java to
+//        String bundleFile = workingDirectory + "/" + p.bundleFileName; // this is where we download the bundle to
+//
+//        SFTPClient sftp = new SFTPClient(connection);
+//        // wipe out and recreate the Java directory
+//        exec("rm -rf " + javaDir, listener.getLogger());
+//        sftp.mkdirs(javaDir, 755);
+//
+//        JDKInstaller jdk = new JDKInstaller("jdk-6u16-oth-JPR@CDS-CDS_Developer", true);
+//        URL bundle = jdk.locate(listener, p, cpu);
+//
+//        listener.getLogger().println("Installing JDK6u16");
+//        Util.copyStreamAndClose(bundle.openStream(), new BufferedOutputStream(sftp.writeToFile(bundleFile), 32 * 1024));
+//        sftp.chmod(bundleFile, 755);
+//
+//        jdk.install(new RemoteLauncher(listener, connection), p, new SFTPFileSystem(sftp), listener, javaDir,
+//            bundleFile);
+//        return javaDir + "/bin/java";
+//    }
 
     /**
      * Starts the slave process.
