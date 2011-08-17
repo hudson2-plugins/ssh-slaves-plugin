@@ -51,6 +51,17 @@
             <artifactId>hudson-test-framework</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jvnet.hudson.plugins</groupId>
+                    <artifactId>subversion</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnet.hudson</groupId>
+            <artifactId>ganymed-ssh-2</artifactId>
+            <version>build260</version>
         </dependency>
     </dependencies>
 

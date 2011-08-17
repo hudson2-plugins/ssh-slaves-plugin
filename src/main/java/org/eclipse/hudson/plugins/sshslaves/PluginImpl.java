@@ -14,7 +14,7 @@
  *******************************************************************************/
 package org.eclipse.hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.Connection;
+import ch.ethz.ssh2.Connection;
 import hudson.Plugin;
 import hudson.model.Hudson;
 import java.util.ArrayList;

@@ -14,7 +14,7 @@
  *******************************************************************************/
 package org.eclipse.hudson.plugins.sshslaves;
 
-import com.trilead.ssh2.SFTPv3DirectoryEntry;
+import ch.ethz.ssh2.SFTPv3DirectoryEntry;
 import hudson.tools.JDKInstaller.FileSystem;
 import java.io.BufferedInputStream;
 import java.io.IOException;
